@@ -5,7 +5,12 @@ import NextAuth from "next-auth";
 // Save to DB
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { PrismaClient } from "@prisma/client"
-const prisma = new PrismaClient()
+import { fieldEncryptionExtension } from 'prisma-field-encryption'
+const globalClient = new PrismaClient()
+export const prisma = globalClient.$extends(
+  // This is a function, don't forget to call it:
+  fieldEncryptionExtension()
+)
 
 export const options: AuthOptions = {
 
