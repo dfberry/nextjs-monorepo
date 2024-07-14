@@ -1,22 +1,22 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { options } from "@/auth/config";
-import { SignInButton } from "@/components/SignInButton";
+import { SignOutButton } from "@/components/SignOutButton";
 
-const SignInPage = async () => {
+const SignOutPage = async () => {
   const session = await getServerSession(options);
 
-  if (session) {
-    redirect("/profile");
+  if (!session) {
+    redirect("/");
   } else {
     return (
       <div>
-        <h1>SignInPage</h1>
+        <h1>SignOutPage</h1>
 
-        <SignInButton />
+        <SignOutButton />
       </div>
     );
   }
 };
 
-export default SignInPage;
+export default SignOutPage;
