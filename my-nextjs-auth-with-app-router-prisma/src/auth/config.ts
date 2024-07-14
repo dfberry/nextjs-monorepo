@@ -92,23 +92,23 @@ export const options: AuthOptions = {
       }
       return session
     },
-    async signIn({ user, account, profile, email, credentials }) {
-      console.log("CALLBACK Sign-In:", JSON.stringify({ user, account, profile, email, credentials }, null, 2))
-      return true
-    },
-    async redirect({ url, baseUrl }) {
-      console.log("CALLBACK REDIRECT:", JSON.stringify({ url, baseUrl}))
-      return baseUrl 
-    },
+    // async signIn({ user, account, profile, email, credentials }) {
+    //   console.log("CALLBACK Sign-In:", JSON.stringify({ user, account, profile, email, credentials }, null, 2))
+    //   return true
+    // },
+    // async redirect({ url, baseUrl }) {
+    //   console.log("CALLBACK REDIRECT:", JSON.stringify({ url, baseUrl}))
+    //   return baseUrl 
+    // },
   },
-  events: {
-    async signIn(message) { console.log("EVENT on successful sign in", message) },
-    async signOut(message) { console.log("EVENT on signout", message) },
-    async createUser(message) { console.log("EVENT user created", message) },
-    async updateUser(message) { console.log("EVENT user updated - e.g. their email was verified", message) },
-    async linkAccount(message) { console.log("EVENT account (e.g. Twitter) linked to a user",message) },
-    async session(message) { console.log("EVENT session is active", message) },
-}
+//   events: {
+//     async signIn(message) { console.log("EVENT on successful sign in", message) },
+//     async signOut(message) { console.log("EVENT on signout", message) },
+//     async createUser(message) { console.log("EVENT user created", message) },
+//     async updateUser(message) { console.log("EVENT user updated - e.g. their email was verified", message) },
+//     async linkAccount(message) { console.log("EVENT account (e.g. Twitter) linked to a user",message) },
+//     async session(message) { console.log("EVENT session is active", message) },
+// }
 };
 declare module "next-auth/jwt" {
   interface JWT {
