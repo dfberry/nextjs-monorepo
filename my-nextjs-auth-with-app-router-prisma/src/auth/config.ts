@@ -57,7 +57,7 @@ export const options: AuthOptions = {
   ],
   callbacks: {
     async jwt(props) {
-      const { token, session, account } = props;
+      const { token, session, account, profile } = props;
 
       console.log("CALLBACK JWT-Props:", JSON.stringify(props, null, 2))
 
@@ -66,13 +66,21 @@ export const options: AuthOptions = {
         token.accessToken = account.access_token
         token.socialauth = account.provider
       }
+      // @ts-ignore
+      if(profile?.login) {
+        // @ts-ignore
+        token.login = profile?.login
+      }
       return token
     },
     async session(props) {
 
       console.log("CALLBACK Session-Props:", JSON.stringify(props, null, 2))
       const { session, token, user } = props;
-
+      if (token?.login) { // Here, `profileLogin` is what you named the field when adding it to the token
+        session.login = token.login;
+      }
+    
       if (token?.accessToken) {
         session.accessToken = token.accessToken || ''
       }
@@ -125,6 +133,7 @@ declare module 'next-auth' {
     id: string
     socialauth?: any
     role?: 'admin' | 'user'
+    login?: string
   }
 
   interface User extends DefaultUser {
@@ -135,6 +144,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string
     role?: 'admin' | 'user'
+    login: string
   }
 }
 export const { handlers, signIn, signOut, auth } = NextAuth({
