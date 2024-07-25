@@ -1,0 +1,39 @@
+{
+	"name": "github-oauth",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint --fix",
+		"test": "jest",
+		"db:insert": "node ./scripts/insert-into-sqlite.js",
+		"generate-keys": "chmod +x ./scripts/create-encryption-keys.sh && ./scripts/create-encryption-keys.sh"
+	},
+	"dependencies": {
+		"@lucia-auth/adapter-sqlite": "^3.0.0",
+		"arctic": "^0.10.2",
+		"better-sqlite3": "^9.2.2",
+		"crypto": "^1.0.1",
+		"dotenv": "^16.4.5",
+		"lucia": "^3.2.0",
+		"next": "14.0.4",
+		"react": "^18",
+		"react-dom": "^18",
+		"uuid": "^10.0.0"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.8",
+		"@types/jest": "^29.5.12",
+		"@types/node": "^20",
+		"@types/react": "^18",
+		"@types/react-dom": "^18",
+		"@types/uuid": "^10.0.0",
+		"eslint": "^8",
+		"eslint-config-next": "14.0.4",
+		"jest": "^29.7.0",
+		"ts-jest": "^29.2.3",
+		"typescript": "^5"
+	}
+}
