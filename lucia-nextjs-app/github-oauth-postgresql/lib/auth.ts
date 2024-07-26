@@ -18,7 +18,7 @@ export const lucia = new Lucia(adapter, {
 	getUserAttributes: (attributes) => {
 		console.log("Auth attributes", attributes);
 		return {
-			githubId: attributes.github_id,
+			githubId: attributes.githubId,
 			username: attributes.username,
 		};
 	}
@@ -35,6 +35,8 @@ export const validateRequest = cache(
 	async (): Promise<{ user: User; session: Session } | { user: null; session: null }> => {
 
 		const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
+		console.log("validateRequest sessionId", sessionId);
+
 		if (!sessionId) {
 
 			console.log("No session id");
@@ -46,17 +48,17 @@ export const validateRequest = cache(
 		}
 
 		const result = await lucia.validateSession(sessionId);
-		console.log("Auth result", result);
+		console.log("validateRequest Auth result", result);
 		// next.js throws when you attempt to set cookie when rendering page
 		try {
 			if (result && result.session && result.session.fresh) {
 				const sessionCookie = lucia.createSessionCookie(result.session.id);
-				console.log("sessionCookie", sessionCookie);
+				console.log("validateRequest sessionCookie", sessionCookie);
 				cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 			}
 			if (!result.session) {
 				const sessionCookie = lucia.createBlankSessionCookie();
-				console.log("sessionCookie", sessionCookie);
+				console.log("validateRequest sessionCookie", sessionCookie);
 				cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 			}
 		} catch { }

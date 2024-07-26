@@ -1,6 +1,7 @@
 import { lucia, validateRequest } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { deleteDbTokenByDbUserId } from "@/lib/db";
 
 export default async function Page() {
 	const { user } = await validateRequest();
@@ -28,6 +29,9 @@ async function logout(): Promise<ActionResult> {
 	}
 
 	await lucia.invalidateSession(session.id);
+
+	// delete the token as well
+	await deleteDbTokenByDbUserId(session.userId);
 
 	const sessionCookie = lucia.createBlankSessionCookie();
 	cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
