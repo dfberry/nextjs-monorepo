@@ -1,17 +1,13 @@
 import { Lucia } from "lucia";
-import { BetterSqlite3Adapter } from "@lucia-auth/adapter-sqlite";
-import { db } from "./db";
+import { adapter, db, userTable } from "./db";
 import { cookies } from "next/headers";
-import { cache } from "react";
 import { GitHub } from "arctic";
+import { cache } from "react";
 
 import type { Session, User } from "lucia";
 import type { DatabaseUser } from "./db";
 
-const adapter = new BetterSqlite3Adapter(db, {
-	user: "user",
-	session: "session"
-});
+export { db, userTable };
 
 export const lucia = new Lucia(adapter, {
 	sessionCookie: {
@@ -20,12 +16,10 @@ export const lucia = new Lucia(adapter, {
 		}
 	},
 	getUserAttributes: (attributes) => {
-
 		console.log("Auth attributes", attributes);
-
 		return {
 			githubId: attributes.github_id,
-			username: attributes.username
+			username: attributes.username,
 		};
 	}
 });
@@ -42,6 +36,9 @@ export const validateRequest = cache(
 
 		const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
 		if (!sessionId) {
+
+			console.log("No session id");
+
 			return {
 				user: null,
 				session: null
@@ -52,7 +49,7 @@ export const validateRequest = cache(
 		console.log("Auth result", result);
 		// next.js throws when you attempt to set cookie when rendering page
 		try {
-			if (result.session && result.session.fresh) {
+			if (result && result.session && result.session.fresh) {
 				const sessionCookie = lucia.createSessionCookie(result.session.id);
 				console.log("sessionCookie", sessionCookie);
 				cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
@@ -62,7 +59,7 @@ export const validateRequest = cache(
 				console.log("sessionCookie", sessionCookie);
 				cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 			}
-		} catch {}
+		} catch { }
 		return result;
 	}
 );
