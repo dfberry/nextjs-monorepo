@@ -1,15 +1,10 @@
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle";
-
-import { sql } from "drizzle-orm";
-
 import pg from "pg";
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { github } from "./auth";
 import { userTable, sessionTable, tokenTable } from "./db.schema";
-import { eq } from 'drizzle-orm/expressions';
-import EncryptionService from "./encrypt";
-import { GitHubUser } from "./github";
+import { eq } from "drizzle-orm";
+import EncryptionService from "../encrypt";
+import { GitHubUser } from "../github/github";
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -36,16 +31,24 @@ async function updateDbToken(dbUserId: string, encryptedAccessToken: string) {
         .where(eq(tokenTable.userId, dbUserId))
         .execute();
 }
-async function insertDbToken(dbUserId: string, encryptedAccessToken: string) {
+async function insertDbToken(dbUserId: string, accessToken: string) {
 
-    if (!dbUserId || !encryptedAccessToken) throw new Error("insertDbToken: Invalid arguments");
+    console.log(`insertDbToken: `, dbUserId, accessToken);
+    if (!dbUserId || !accessToken) throw new Error("insertDbToken: Invalid arguments");
 
-    await db.insert(tokenTable)
+    const encryptor = new EncryptionService();
+    const encryptedUserId = encryptor.encrypt(dbUserId);
+    const encryptedToken = encryptor.encrypt(accessToken);
+    console.log(`insertDbToken: `, encryptedToken);
+
+    const insertedToken = await db.insert(tokenTable)
         .values({
             userId: dbUserId,
-            encryptedAccessToken: encryptedAccessToken
+            encryptedAccessToken: encryptedToken
         })
         .execute();
+
+    console.log(`insertDbToken: `, insertedToken);
 }
 function convertGitHubUserToDatabaseUser(newDbUserId: string, githubUser: GitHubUser): DatabaseUser {
     return {
@@ -55,32 +58,38 @@ function convertGitHubUserToDatabaseUser(newDbUserId: string, githubUser: GitHub
     };
 }
 
-async function insertDbUser(dbUserId: string, githubUser: GitHubUser) {
+async function insertDbUser(dbUserId: string, githubUser: Pick<GitHubUser, 'id' | 'login'>) {
 
-    console.log(`insertDbUser: dbUserId ${dbUserId}`);
-    console.log(`insertDbUser: githubUser.github_id ${githubUser.id}`);
-    console.log(`insertDbUser: githubUser.login ${githubUser.login}`);
+    console.log(`insertDbUser: `, dbUserId, githubUser);
+    const encryptor = new EncryptionService();
 
     if (!dbUserId || !githubUser.id || !githubUser.login) throw new Error("insertUser: Invalid arguments");
 
-    const { id, ...userWithoutId } = githubUser;
+    const newUser = {
+        id: dbUserId,
+        githubId: encryptor.encrypt(githubUser.id.toString()),
+        username: encryptor.encrypt(githubUser.login)
+    };
+    console.log(`insertDbUser: `, newUser);
 
     await db.insert(userTable)
-        .values({
-            id: dbUserId,
-            githubId: githubUser.id,
-            username: githubUser.login
-        })
+        .values(newUser)
         .execute();
 }
+/**
+ * SECURITY RISK: This function may expose the accessToken.
+ * Ensure that the accessToken is handled securely and not logged or exposed in any way.
+ */
 async function getDbUserByGithubId(githubId: string): Promise<DatabaseUser | null> {
 
     try {
         if (!githubId) throw new Error("getDbUserByGithubId: Invalid arguments");
 
-        console.log(`getDbUserByGithubId: ${githubId}`);
+        console.log(`getDbUserByGithubId unencrypted GitHubId: ${githubId}`);
+        const encryptedId = new EncryptionService().encrypt(githubId.toString());
+        console.log(`getDbUserByGithubId encrypted GitHubId: ${encryptedId}`);
 
-        const row = await db.select().from(userTable).where(eq(userTable.githubId, githubId)).execute();
+        const row = await db.select().from(userTable).where(eq(userTable.githubId, encryptedId)).execute();
 
         if (row.length === 0) return null;
         return row[0] as DatabaseUser;
@@ -94,14 +103,20 @@ async function getDbUserByGithubId(githubId: string): Promise<DatabaseUser | nul
 
 async function getDbTokenByDbUserId(dbUserId: string) {
 
+    console.log(`getDbTokenByDbUserId encrypted user id: ${dbUserId}`);
     if (!dbUserId) throw new Error("getDbTokenByDbUserId: Invalid arguments");
 
     const row = await db.select().from(tokenTable).where(eq(tokenTable.userId, dbUserId)).execute();
 
-    if (row.length === 0 || !row[0].encryptedAccessToken) return null;
-
+    if (row.length === 0 || !row[0].encryptedAccessToken) {
+        console.log(`getDbTokenByDbUserId: No token found`);
+        return null;
+    }
     const encryptor = new EncryptionService();
     const decryptedToken = encryptor.decrypt(row[0].encryptedAccessToken);
+    
+    console.log(`getDbTokenByDbUserId decrypted access token: ${decryptedToken}`);
+
     return decryptedToken;
 }
 

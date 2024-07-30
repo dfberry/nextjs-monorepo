@@ -2,9 +2,9 @@ import { sql } from "drizzle-orm";
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 
 export const userTable = pgTable("user", {
-	id: text("id").primaryKey(),
-	githubId: text("github_id").notNull(),
-	username: text("username").notNull()
+    id: text("id").primaryKey().unique(),
+    githubId: text("github_id").notNull().unique(),
+    username: text("username").notNull().unique()
 });
 
 export const sessionTable = pgTable("session", {

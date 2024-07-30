@@ -1,105 +1,90 @@
-import { db, github, lucia, userTable, } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { github, lucia } from "@/lib/auth/auth";
+import { getDbUserByGithubId, insertDbToken, insertDbUser } from "@/lib/db/db";
+import { DatabaseUser, generateId } from "lucia";
+//import GitHubAuthHandler from "@/lib/auth/github-auth-handler";
 import { OAuth2RequestError } from "arctic";
-import { generateId } from "lucia";
-import { sql } from "drizzle-orm";
-import EncryptionService from "@/lib/encrypt";
-import { updateDbToken, insertDbToken, convertGitHubUserToDatabaseUser, getDbUserByGithubId, getDbTokenByDbUserId, insertDbUser } from "@/lib/db";
-import { getGithHubUser, GitHubUser } from "@/lib/github";
-import { createSessionForGitHubUser } from "@/lib/session";
+
+interface GitHubUser {
+	id: string;
+	login: string;
+}
 
 export async function GET(request: Request): Promise<Response> {
+
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
+    
     const storedState = cookies().get("github_oauth_state")?.value ?? null;
 
     console.log(`code: ${code}`);
     console.log(`state: ${state}`);
     console.log(`storedState: ${storedState}`);
 
+
     if (!code || !state || !storedState || state !== storedState) {
-
         console.log(`returning 400`);
-
-        return new Response(null, {
-            status: 400
-        });
+        return new Response(null, { status: 400 });
     }
 
     try {
-        const encryptor = new EncryptionService();
-        const tokens = await github.validateAuthorizationCode(code);
-        console.log(`tokens: ${JSON.stringify(tokens)}`);
+		const tokens = await github.validateAuthorizationCode(code);
+		console.log("tokens", tokens);
+		const githubUserResponse = await fetch("https://api.github.com/user", {
+			headers: {
+				Authorization: `Bearer ${tokens.accessToken}`
+			}
+		});
+		const githubUser: GitHubUser= await githubUserResponse.json();
+        const existingDbUser = await getDbUserByGithubId(githubUser.id);
 
-        const encryptedAccessToken = encryptor.encrypt(tokens.accessToken);
-        console.log("encryptedAccessToken", encryptedAccessToken);
+		if (existingDbUser?.githubId) {
 
-        const githubUser: GitHubUser = await getGithHubUser(tokens.accessToken);
-        if (!githubUser) {
-            return new Response(null, {
-                status: 400
-            });
-        }
-
-        // Check if user is in DB
-        console.log(`existing GitHub User: ${JSON.stringify(githubUser)}`);
-        const dbUser = await getDbUserByGithubId(githubUser.id);
-        console.log(`db
-            User: ${JSON.stringify(dbUser)}`);
-
-        if(dbUser) {
-
-            // Existing user
-			const session = await lucia.createSession(dbUser.id, {});
+            console.log(`existingDbUser: ${JSON.stringify(existingDbUser)}`);
+            await insertDbToken(existingDbUser.id, tokens.accessToken);
+			const session = await lucia.createSession(existingDbUser.id, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);
 			cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+			return new Response(null, {
+				status: 302,
+				headers: {
+					Location: "/profile"
+				}
+			});
+		}
 
-            console.log(`created session for user: ${dbUser?.id}`);
+		const userId = generateId(15);
 
-            await updateDbToken(dbUser?.id!!, encryptedAccessToken);
-            console.log(`updated token for user: ${githubUser.id}`);
+        const narrowedGithubUser = {
+            login: githubUser.login,
+            id: githubUser.id
+        };
 
-            return new Response(null, {
-                status: 302,
-                headers: {
-                    Location: "/"
-                }
-            });
-
-        } else {
-            // New user
-            const userId = generateId(15)
-            console.log(`new user id: ${userId}`);
-
-            const dbUser = convertGitHubUserToDatabaseUser(userId, githubUser);
-            await insertDbUser(userId, githubUser);
-
-            const session = await lucia.createSession(userId, {});
-            const sessionCookie = lucia.createSessionCookie(session.id);
-            cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
-
-            await insertDbToken(userId, encryptedAccessToken);
-            
-            return new Response(null, {
-                status: 302,
-                headers: {
-                    Location: "/"
-                }
-            });
-        }
+        await insertDbUser(userId, narrowedGithubUser);
+        await insertDbToken(userId, tokens.accessToken);
+		const session = await lucia.createSession(userId, {});
+		const sessionCookie = lucia.createSessionCookie(session.id);
+		cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+		return new Response(null, {
+			status: 302,
+			headers: {
+				Location: "/profile"
+			}
+		});
+	} catch (e) {
+		if (e instanceof OAuth2RequestError && e.message === "bad_verification_code") {
+			// invalid code
+			return new Response(null, {
+				status: 400
+			});
+		}
+		return new Response(null, {
+			status: 500
+		});
+	}
 
 
-    } catch (e) {
-        console.error(`GET error: ${e}`);
-        if (e instanceof OAuth2RequestError) {
-            return new Response(null, {
-                status: 400
-            });
-        }
-        return new Response(null, {
-            status: 500
-        });
-    }
+
 }
 

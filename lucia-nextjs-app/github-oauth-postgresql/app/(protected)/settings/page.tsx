@@ -1,33 +1,25 @@
 import useRequireAuth from '@/hooks/useRequireAuth';
 import ProfileComponent from '@/components/Profile';
-// import { getTokenByUserId } from "@/lib/db";
+import GitHubService from '@/lib/github/github';
 
 export default async function ProfilePage() {
-	const session = await useRequireAuth();
-	//let gitHubUser = null;
-/* 
-	if(session?.user?.githubId) {
-		const accessToken = getTokenByUserId(session.user.id);
-		console.log("getTokenByUserId accessToken", accessToken);
 
-		if(accessToken){
-			// Fetch user data from GitHub
-			const response = await fetch('https://api.github.com/user', {
-				headers: {
-					Authorization: `Bearer ${accessToken}`
-				}
-			});
-			if(response.ok){
-				gitHubUser = await response.json();
-				console.log("gitHubUser", gitHubUser);
-			}
-		}
-	} */
+	console.log("ProfilePage: Start");
 
+	const {user, session, isAuthorized }= await useRequireAuth();
+	if (!isAuthorized){
+		console.log("ProfilePage: Not authorized");
+		return null;
+	} else {
+		console.log("ProfilePage: Authorized");
+	}
+
+	const userProfile = await GitHubService.getGithHubUserBySessionResult({session, user});
+	console.log(`ProfilePage userProfile: ${JSON.stringify(userProfile)}`);
 
 	return (
 		<>
-			<ProfileComponent session={session} />
+			<ProfileComponent session={session} user={user} githubProfile={userProfile}/>
 		</>
 	);
 }

@@ -1,5 +1,5 @@
 import { generateState } from "arctic";
-import { github } from "@/lib/auth";
+import { github } from "@/lib/auth/auth";
 import { cookies } from "next/headers";
 
 export async function GET(): Promise<Response> {

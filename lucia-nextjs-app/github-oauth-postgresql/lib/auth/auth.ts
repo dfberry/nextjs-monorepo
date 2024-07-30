@@ -1,13 +1,19 @@
 import { Lucia } from "lucia";
-import { adapter, db, userTable } from "./db";
+import { adapter, db, userTable } from "../db/db";
 import { cookies } from "next/headers";
 import { GitHub } from "arctic";
 import { cache } from "react";
+import SessionManager from './session'; // Adjust the import path as necessary
 
 import type { Session, User } from "lucia";
-import type { DatabaseUser } from "./db";
+import type { DatabaseUser } from "../db/db";
 
 export { db, userTable };
+
+export interface SessionResult {
+    user: User | null;
+    session: Session | null;
+}
 
 export const lucia = new Lucia(adapter, {
 	sessionCookie: {
@@ -32,38 +38,33 @@ declare module "lucia" {
 }
 
 export const validateRequest = cache(
-	async (): Promise<{ user: User; session: Session } | { user: null; session: null }> => {
+    async (): Promise<SessionResult> => {
 
 		const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
-		console.log("validateRequest sessionId", sessionId);
-
 		if (!sessionId) {
-
-			console.log("No session id");
-
 			return {
 				user: null,
 				session: null
 			};
 		}
 
-		const result = await lucia.validateSession(sessionId);
-		console.log("validateRequest Auth result", result);
+        const result = await lucia.validateSession(sessionId);
+		console.log("Auth result", result);
 		// next.js throws when you attempt to set cookie when rendering page
 		try {
-			if (result && result.session && result.session.fresh) {
+			if (result.session && result.session.fresh) {
 				const sessionCookie = lucia.createSessionCookie(result.session.id);
-				console.log("validateRequest sessionCookie", sessionCookie);
+				console.log("sessionCookie", sessionCookie);
 				cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 			}
 			if (!result.session) {
 				const sessionCookie = lucia.createBlankSessionCookie();
-				console.log("validateRequest sessionCookie", sessionCookie);
+				console.log("sessionCookie", sessionCookie);
 				cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 			}
-		} catch { }
+		} catch {}
 		return result;
-	}
+    }
 );
 
 export const github = new GitHub(process.env.GITHUB_CLIENT_ID!, process.env.GITHUB_CLIENT_SECRET!);

@@ -1,7 +1,7 @@
-import { lucia, validateRequest } from "@/lib/auth";
+import { lucia, validateRequest } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { deleteDbTokenByDbUserId } from "@/lib/db";
+import { deleteDbTokenByDbUserId } from "@/lib/db/db";
 
 export default async function Page() {
 	const { user } = await validateRequest();

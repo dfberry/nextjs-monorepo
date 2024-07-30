@@ -1,4 +1,4 @@
-import { lucia, validateRequest } from "@/lib/auth";
+import { lucia, validateRequest } from "@/lib/auth/auth";
 import useRequireAuth from "@/hooks/useRequireAuth";
 
 export default async function ProfilePage() {

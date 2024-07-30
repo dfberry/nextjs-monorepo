@@ -24,3 +24,7 @@ If you're using Node 16 or 18, uncomment the code in `lib/auth.ts`. This is not 
 // import { webcrypto } from "crypto";
 // globalThis.crypto = webcrypto as Crypto;
 ```
+
+## Access token
+
+access token is encrypted but github user id or login aren't encrypted

@@ -1,10 +1,8 @@
-
+import Link from 'next/link';
 export default async function HomePage() {
 
 	return (
-		<>
-			HomePage
-		</>
+			<Link href="/login">Login</Link>
 	);
 }
 

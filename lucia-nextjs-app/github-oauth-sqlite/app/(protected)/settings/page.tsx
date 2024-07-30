@@ -7,14 +7,14 @@ export default async function ProfilePage() {
 	let gitHubUser = null;
 
 	if(session?.user?.githubId) {
-		const accessToken = getTokenByUserId(session.user.id);
-		console.log("getTokenByUserId accessToken", accessToken);
+		const decryptedAccessToken = getTokenByUserId(session.user.id);
+		console.log("getTokenByUserId accessToken", decryptedAccessToken);
 
-		if(accessToken){
+		if(decryptedAccessToken){
 			// Fetch user data from GitHub
 			const response = await fetch('https://api.github.com/user', {
 				headers: {
-					Authorization: `Bearer ${accessToken}`
+					Authorization: `Bearer ${decryptedAccessToken}`
 				}
 			});
 			if(response.ok){

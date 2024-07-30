@@ -26,3 +26,12 @@ If you're using Node 16 or 18, uncomment the code in `lib/auth.ts`. This is not 
 ```
 
 https://whateverittech.medium.com/authenticate-next-14-app-router-with-lucia-auth-92816b1831ff
+
+## Restart with clean db and cookie
+
+* Delete cookie
+* Delete `source-board` db in pgAdmin
+* Create `source-board` db in pgAdmin
+* run `npm run db:generate`
+* run `npm run db:push`
+* run `npm run dev`
