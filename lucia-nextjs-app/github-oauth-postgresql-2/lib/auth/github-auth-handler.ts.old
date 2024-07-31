@@ -1,0 +1,87 @@
+import { db, github, lucia, userTable, } from "@/lib/auth/auth";
+import { cookies } from "next/headers";
+import { OAuth2RequestError } from "arctic";
+import { generateId, Session} from "lucia";
+import { sql } from "drizzle-orm";
+import EncryptionService from "@/lib/encrypt";
+import { updateDbToken, insertDbToken, convertGitHubUserToDatabaseUser, getDbUserByGithubId, getDbTokenByDbUserId, insertDbUser } from "@/lib/db/db";
+import { GitHubService, GitHubUser } from "@/lib/github/github";
+import SessionManager from "@/lib/auth/session";
+
+interface GitHubAuthParams {
+    code: string;
+    state: string;
+    storedState: string;
+}
+type AuthStatus = {
+    status: number;
+    isNewUser?: boolean;
+};
+
+export default class GitHubAuthHandler {
+
+    static async authenticateWithGitHub(params: GitHubAuthParams): Promise<AuthStatus> {
+
+        const { code, state, storedState } = params;
+
+        try {
+            const unencryptedTokens = await github.validateAuthorizationCode(code);
+            console.log(`authenticateWithGitHub tokens: ${JSON.stringify(unencryptedTokens)}`);
+
+            // Existing user in GitHub
+            const githubUserFromGitHub: GitHubUser = await GitHubService.getGithHubUserByUnencryptedAccessToken(unencryptedTokens.accessToken);
+            console.log(`authenticateWithGitHub githubUser: ${JSON.stringify(githubUserFromGitHub)}`);
+
+            // Check if user is in DB
+            console.log(`authenticateWithGitHub existing GitHub User: ${JSON.stringify(githubUserFromGitHub)}`);
+            const dbUser = await getDbUserByGithubId(githubUserFromGitHub.id);
+            console.log(`authenticateWithGitHub db User: ${JSON.stringify(dbUser)}`);
+
+            if (dbUser) {
+                // Existing user in database
+                await this.updateUserToken(dbUser.id, encryptedAccessToken);
+                const session = await lucia.createSession(dbUser.id, {});
+                const sessionCookie = lucia.createSessionCookie(session.id);
+                cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+    
+                return { status: 302, isNewUser: false };
+
+            } 
+
+            // New user
+            const newUserId = await this.insertNewUser(githubUser, encryptedAccessToken);
+            const session = await lucia.createSession(newUserId, {});
+            const sessionCookie = lucia.createSessionCookie(session.id);
+            cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+    
+            return { status: 200, isNewUser: true };
+
+        } catch (error) {
+            console.error(error);
+            return { status: 500 };
+        }
+    }
+    private static encryptAccessToken(accessToken: string): string {
+        const encryptor = new EncryptionService();
+        return encryptor.encrypt(accessToken);
+    }
+    private static async updateUserToken(userId: string, encryptedAccessToken: string): Promise<void> {
+        SessionManager.updateSessionCookie(userId);
+        console.log(`created session for user: ${userId}`);
+
+        await updateDbToken(userId, encryptedAccessToken);
+        console.log(`updated token for user: ${userId}`);
+    }
+    private static async insertNewUser(githubUser: GitHubUser, encryptedAccessToken: string): Promise<string> {
+        const userId = generateId(15);
+        console.log(`new user id: ${userId}`);
+
+        const dbUser = convertGitHubUserToDatabaseUser(userId, githubUser);
+        await insertDbUser(userId, githubUser);
+        SessionManager.updateSessionCookie(userId);
+        console.log(`created session for user: ${userId}`);
+
+        console.log(`inserted new user: ${userId}`);
+        return userId;
+    }
+}

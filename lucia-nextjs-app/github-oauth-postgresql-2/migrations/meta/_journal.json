@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1722035795705,
+      "tag": "0000_equal_shinko_yamashiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1722312318282,
+      "tag": "0001_amusing_adam_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1722314081059,
+      "tag": "0002_dapper_rictor",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+	"name": "github-oauth",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint --fix",
+		"test": "jest",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:push": "drizzle-kit push"
+	},
+	"dependencies": {
+		"@lucia-auth/adapter-drizzle": "^1.0.7",
+		"arctic": "^0.10.6",
+		"better-sqlite3": "^9.6.0",
+		"crypto": "^1.0.1",
+		"dotenv": "^16.4.5",
+		"drizzle-orm": "^0.32.1",
+		"lucia": "^3.2.0",
+		"next": "14.0.4",
+		"oslo": "^1.2.1",
+		"pg": "^8.12.0",
+		"postgres": "^3.4.4",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
+		"uuid": "^10.0.0"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.11",
+		"@types/jest": "^29.5.12",
+		"@types/node": "^20.14.12",
+		"@types/pg": "^8.11.6",
+		"@types/react": "^18.3.3",
+		"@types/react-dom": "^18.3.0",
+		"@types/uuid": "^10.0.0",
+		"drizzle-kit": "^0.23.0",
+		"eslint": "^8.57.0",
+		"eslint-config-next": "14.0.4",
+		"jest": "^29.7.0",
+		"ts-jest": "^29.2.3",
+		"typescript": "^5.5.4"
+	}
+}

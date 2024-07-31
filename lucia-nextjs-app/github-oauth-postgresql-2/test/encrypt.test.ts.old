@@ -1,0 +1,41 @@
+import EncryptionService from '../lib/encrypt';
+import 'dotenv/config'
+
+const encryptionKey = process.env.ENCRYPTION_KEY as string; // 32-byte key
+const encryptionIv = process.env.ENCRYPTION_IV as string; // 16-byte IV
+
+
+describe('EncryptionService', () => {
+  let encryptionService = new EncryptionService();
+  const testText = 'Hello, World!';
+
+  beforeAll(() => {
+    process.env.ENCRYPTION_KEY = encryptionKey;
+    process.env.ENCRYPTION_IV = encryptionIv;
+    encryptionService = new EncryptionService();
+  });
+
+  test('should encrypt text', () => {
+    const encryptedText = encryptionService.encrypt(testText);
+    expect(encryptedText).toBeDefined();
+    expect(encryptedText).not.toBe(testText);
+  });
+
+  test('should decrypt text', () => {
+    const encryptedText = encryptionService.encrypt(testText);
+    const decryptedText = encryptionService.decrypt(encryptedText);
+    expect(decryptedText).toBe(testText);
+  });
+
+  test('should throw error with incorrect key or iv', () => {
+    const encryptedText = encryptionService.encrypt(testText);
+    process.env.ENCRYPTION_KEY = 'wrongkeywrongkeywrongkeywrongkeywrongkeywrongkeywrongkeywrongkey';
+    const wrongEncryptionService = new EncryptionService();
+    expect(() => wrongEncryptionService.decrypt(encryptedText)).toThrow();
+
+    process.env.ENCRYPTION_KEY = encryptionKey;
+    process.env.ENCRYPTION_IV = 'wrongivwrongivwrongivwrongiv';
+    const wrongIvEncryptionService = new EncryptionService();
+    expect(() => wrongIvEncryptionService.decrypt(encryptedText)).toThrow();
+  });
+});
